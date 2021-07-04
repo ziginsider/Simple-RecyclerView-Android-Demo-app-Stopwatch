@@ -1,12 +1,17 @@
 package com.example.stopwatch
 
+import android.content.res.Resources
+import android.graphics.drawable.AnimationDrawable
 import android.os.CountDownTimer
+import androidx.core.view.isInvisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.stopwatch.databinding.StopwatchItemBinding
 
 class StopwatchViewHolder(
-    private val binding: StopwatchItemBinding
-): RecyclerView.ViewHolder(binding.root) {
+    private val binding: StopwatchItemBinding,
+    private val listener: StopwatchListener,
+    private val resources: Resources
+) : RecyclerView.ViewHolder(binding.root) {
 
     private var timer: CountDownTimer? = null
 
@@ -15,13 +20,47 @@ class StopwatchViewHolder(
 
         if (stopwatch.isStarted) {
             startTimer(stopwatch)
+        } else {
+            stopTimer(stopwatch)
         }
+
+        initButtonsListeners(stopwatch)
+    }
+
+    private fun initButtonsListeners(stopwatch: Stopwatch) {
+        binding.startPauseButton.setOnClickListener {
+            if (stopwatch.isStarted) {
+                listener.stop(stopwatch.id, stopwatch.currentMs)
+            } else {
+                listener.start(stopwatch.id)
+            }
+        }
+
+        binding.restartButton.setOnClickListener { listener.reset(stopwatch.id) }
+
+        binding.deleteButton.setOnClickListener { listener.delete(stopwatch.id) }
     }
 
     private fun startTimer(stopwatch: Stopwatch) {
+        val drawable = resources.getDrawable(R.drawable.ic_baseline_pause_24)
+        binding.startPauseButton.setImageDrawable(drawable)
+
         timer?.cancel()
         timer = getCountDownTimer(stopwatch)
         timer?.start()
+
+        binding.blinkingIndicator.isInvisible = false
+        (binding.blinkingIndicator.background as? AnimationDrawable)?.start()
+    }
+
+    private fun stopTimer(stopwatch: Stopwatch) {
+        val drawable = resources.getDrawable(R.drawable.ic_baseline_play_arrow_24)
+        binding.startPauseButton.setImageDrawable(drawable)
+
+        timer?.cancel()
+
+        binding.blinkingIndicator.isInvisible = true
+        (binding.blinkingIndicator.background as? AnimationDrawable)?.stop()
     }
 
     private fun getCountDownTimer(stopwatch: Stopwatch): CountDownTimer {
@@ -63,6 +102,6 @@ class StopwatchViewHolder(
 
         private const val START_TIME = "00:00:00:00"
         private const val UNIT_TEN_MS = 10L
-        private const val PERIOD  = 1000L * 60L * 60L * 24L // Day
+        private const val PERIOD = 1000L * 60L * 60L * 24L // Day
     }
 }
